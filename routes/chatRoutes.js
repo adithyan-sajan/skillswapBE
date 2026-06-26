@@ -1,6 +1,10 @@
+// routes/chatRoutes.js
 const express = require('express');
-const { getMessages } = require('../controllers/chatController');
 const router = express.Router();
+const { checkAuth } = require('../middleware/authMiddleware');
+const { getMyConversations, getMessages } = require('../controllers/chatController');
 
-router.get('/:conversationId', checkAuth, getMessages)
+router.get('/conversations', checkAuth, getMyConversations);
+router.get('/:conversationId', checkAuth, getMessages);
+
 module.exports = router;

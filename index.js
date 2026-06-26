@@ -36,7 +36,8 @@ app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/listings', require('./routes/listingRoutes'));
 app.use('/api/requests', require('./routes/requestRoutes'));
-
+app.use('/api/chat', require('./routes/chatRoutes'));
+app.use('/api/sessions', require('./routes/sessionRoutes'));
 // 🚨 4. THE SOCKET.IO ENGINE
 io.on('connection', (socket) => {
   console.log(`🔌 New connection: ${socket.id}`);
