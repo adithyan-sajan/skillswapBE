@@ -38,31 +38,29 @@ app.use('/api/listings', require('./routes/listingRoutes'));
 app.use('/api/requests', require('./routes/requestRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/sessions', require('./routes/sessionRoutes'));
+app.use('/api/escrow', require('./routes/escrowRoutes'));
+
 // 🚨 4. THE SOCKET.IO ENGINE
 io.on('connection', (socket) => {
   console.log(`🔌 New connection: ${socket.id}`);
 
-  // When a user opens a specific chat UI, they "join" that conversation's room
+  // ==========================================
+  // 💬 CHAT SYSTEM LOGIC
+  // ==========================================
   socket.on('join_chat', (conversationId) => {
     socket.join(conversationId);
-    console.log(`User joined room: ${conversationId}`);
+    console.log(`User joined chat room: ${conversationId}`);
   });
 
-  // When a user sends a message from the React UI
   socket.on('send_message', async (data) => {
-    // data should look like: { conversationId, senderId, text }
-    
-    // 1. Broadcast the message to the other person in the room immediately
     io.to(data.conversationId).emit('receive_message', data);
 
-    // 2. Save it to MongoDB in the background
     try {
       const Message = require('./models/Message');
       const Conversation = require('./models/Conversation');
       
       const newMessage = await Message.create(data);
       
-      // Update the conversation's "lastMessage" for the inbox preview
       await Conversation.findByIdAndUpdate(data.conversationId, { 
         lastMessage: newMessage._id 
       });
@@ -71,6 +69,24 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ==========================================
+  // 🎨 WHITEBOARD & VIDEO SESSION LOGIC
+  // ==========================================
+  // 1. Join the specific Session Room (from the Dashboard)
+  socket.on("join_room", (roomId) => {
+    socket.join(roomId);
+    console.log(`User joined session matrix: ${roomId}`);
+  });
+
+  // 2. Bounce the whiteboard data to the other user
+  socket.on("canvas_sync", (data) => {
+    // socket.to() sends it to everyone in the room EXCEPT the sender
+    socket.to(data.roomId).emit("canvas_sync", data.changes);
+  });
+
+  // ==========================================
+  // 🛑 DISCONNECT LOGIC
+  // ==========================================
   socket.on('disconnect', () => {
     console.log(`🛑 Disconnected: ${socket.id}`);
   });
