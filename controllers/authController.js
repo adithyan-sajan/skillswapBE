@@ -4,11 +4,11 @@ const jwt = require('jsonwebtoken');
 
 // Helper Generators
 const generateAccessToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '15m' }); // 15 minutes!
+  return jwt.sign({ id, type: 'access' }, process.env.JWT_ACCESS_SECRET, { expiresIn: '15m' });
 };
 
 const generateRefreshToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' }); // 7 days!
+  return jwt.sign({ id, type: 'refresh' }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 };
 
 // Reusable function to attach the cookie
@@ -82,7 +82,7 @@ exports.refresh = async (req, res) => {
 
   try {
     // 2. Verify the cookie is real and not expired
-    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
     
     // 3. Find the user
     const user = await User.findById(decoded.id).select('-passwordHash');

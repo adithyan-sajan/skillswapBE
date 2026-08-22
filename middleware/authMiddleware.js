@@ -13,8 +13,13 @@ const checkAuth = async (req, res, next) => {
 
   try {
     // 3. Verify the cookie token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+
+    // S6: Reject refresh tokens at access-token middleware — only access tokens allowed here
+    if (decoded.type !== 'access') {
+      return res.status(401).json({ message: 'Not authorized, use the access token' });
+    }
+
     // 4. Attach the user to the request
     req.user = await User.findById(decoded.id).select('-passwordHash');
     
@@ -24,4 +29,12 @@ const checkAuth = async (req, res, next) => {
   }
 };
 
-module.exports = { checkAuth };
+// S9: Admin-only middleware — requires an authenticated user with role 'admin'
+const checkAdmin = (req, res, next) => {
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required.' });
+  }
+  next();
+};
+
+module.exports = { checkAuth, checkAdmin };

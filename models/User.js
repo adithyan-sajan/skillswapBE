@@ -5,6 +5,9 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true },
   passwordHash: { type: String, required: true },
+
+  // S9: Role for admin route access control
+  role: { type: String, enum: ['member', 'admin'], default: 'member' },
   
   // THE WALLET (Critical for Escrow)
   walletBalance: { type: Number, default: 5.00 }, // Start users with 5 SKL

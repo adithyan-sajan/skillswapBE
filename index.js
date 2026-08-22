@@ -39,10 +39,37 @@ app.use('/api/requests', require('./routes/requestRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/sessions', require('./routes/sessionRoutes'));
 app.use('/api/escrow', require('./routes/escrowRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes')); // S9: Admin routes
 
 // 🚨 4. THE SOCKET.IO ENGINE
+// S4: Socket auth middleware — verify JWT from cookie before allowing connection
+io.use(async (socket, next) => {
+  const token = socket.handshake.headers.cookie
+    ?.split(';')
+    .find(c => c.trim().startsWith('jwt='))
+    ?.trim()
+    .split('=')[1];
+  if (!token) {
+    return next(new Error('Authentication error: no session cookie'));
+  }
+  try {
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    if (decoded.type !== 'access') {
+      return next(new Error('Authentication error: refresh token not accepted at socket level'));
+    }
+    const User = require('./models/User');
+    const user = await User.findById(decoded.id).select('-passwordHash');
+    if (!user) return next(new Error('Authentication error: user not found'));
+    socket.user = user;
+    next();
+  } catch (err) {
+    return next(new Error('Authentication error: invalid or expired token'));
+  }
+});
+
 io.on('connection', (socket) => {
-  console.log(`🔌 New connection: ${socket.id}`);
+  console.log(`🔌 New connection: ${socket.id} (user: ${socket.user?.username})`);
 
   // ==========================================
   // 💬 CHAT SYSTEM LOGIC
@@ -53,16 +80,23 @@ io.on('connection', (socket) => {
   });
 
   socket.on('send_message', async (data) => {
-    io.to(data.conversationId).emit('receive_message', data);
+    // S4: Use the authenticated user's id as the sender — never trust client-supplied senderId
+    const messageData = {
+      conversationId: data.conversationId,
+      senderId: socket.user._id,
+      text: data.text,
+      createdAt: new Date().toISOString()
+    };
+    io.to(data.conversationId).emit('receive_message', messageData);
 
     try {
       const Message = require('./models/Message');
       const Conversation = require('./models/Conversation');
-      
-      const newMessage = await Message.create(data);
-      
-      await Conversation.findByIdAndUpdate(data.conversationId, { 
-        lastMessage: newMessage._id 
+
+      const newMessage = await Message.create(messageData);
+
+      await Conversation.findByIdAndUpdate(data.conversationId, {
+        lastMessage: newMessage._id
       });
     } catch (err) {
       console.error("Failed to save message to DB", err);

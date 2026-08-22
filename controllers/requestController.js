@@ -32,7 +32,7 @@ exports.createRequest = async (req, res) => {
 
     res.status(201).json(newRequest);
   } catch (error) {
-    res.status(500).json({ message: "Failed to send request", error: error.message });
+    res.status(500).json({ message: "Failed to send request", });
   }
 };
 
@@ -52,34 +52,11 @@ exports.getMyRequests = async (req, res) => {
 
     res.status(200).json(requests);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch requests", error: error.message });
+    res.status(500).json({ message: "Failed to fetch requests", });
   }
 };
 
 // 3. UPDATE REQUEST STATUS (Accept/Reject)
-exports.updateRequestStatus = async (req, res) => {
-  try {
-    const { requestId } = req.params;
-    const { status } = req.body; // 'Accepted' or 'Rejected'
-    const userId = req.user._id;
-
-    const request = await SwapRequest.findById(requestId);
-    if (!request) return res.status(404).json({ message: "Request not found" });
-
-    // Security Check: Only the receiver (the host) can accept/reject
-    if (request.receiverId.toString() !== userId.toString()) {
-      return res.status(403).json({ message: "Not authorized to update this request." });
-    }
-
-    request.status = status;
-    await request.save();
-
-    res.status(200).json(request);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to update request", error: error.message });
-  }
-};
-
 exports.updateRequestStatus = async (req, res) => {
   try {
     const { requestId } = req.params;
@@ -116,6 +93,6 @@ exports.updateRequestStatus = async (req, res) => {
 
     res.status(200).json(request);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update request", error: error.message });
+    res.status(500).json({ message: "Failed to update request", });
   }
 };

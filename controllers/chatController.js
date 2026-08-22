@@ -21,6 +21,19 @@ exports.getMyConversations = async (req, res) => {
 exports.getMessages = async (req, res) => {
   try {
     const { conversationId } = req.params;
+
+    // S3: IDOR protection — only participants may read message history
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation not found" });
+    }
+    const isParticipant = conversation.participants.some(
+      p => p.toString() === req.user._id.toString()
+    );
+    if (!isParticipant) {
+      return res.status(403).json({ message: "You are not a participant in this conversation." });
+    }
+
     const messages = await Message.find({ conversationId }).sort({ createdAt: 1 });
     res.status(200).json(messages);
   } catch (error) {

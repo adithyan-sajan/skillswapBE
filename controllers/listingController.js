@@ -12,12 +12,12 @@ exports.createListing = async (req, res) => {
       description,
       level,
       costPerHour,
-      status: 'Active'
+      // isActive defaults to true in the schema — no need to set it
     });
 
     res.status(201).json(newListing);
   } catch (error) {
-    res.status(500).json({ message: "Failed to deploy listing", error: error.message });
+    res.status(500).json({ message: "Failed to deploy listing", });
   }
 };
 

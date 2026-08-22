@@ -11,7 +11,7 @@ const tradeRequestSchema = new mongoose.Schema({
     default: 'pending' 
   },
   
-  message: { type: String, maxlength: 500 }, // The note sent with the request
+  message: { type: String, maxLength: 500 }, // The note sent with the request
   createdAt: { type: Date, default: Date.now }
 });
 
