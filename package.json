@@ -5,7 +5,19 @@
   "main": "index.js",
   "scripts": {
     "test": "jest --forceExit",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "migrate:create": "migrate-mongo create",
+    "migrate:up": "migrate-mongo up",
+    "migrate:down": "migrate-mongo down",
+    "migrate:status": "migrate-mongo status",
+    "start": "node index.js",
+    "start:dev": "nodemon index.js",
+    "start:prod": "pm2 start ecosystem.config.js --env production",
+    "stop": "pm2 stop skillswap-be",
+    "restart": "pm2 restart skillswap-be",
+    "logs": "pm2 logs skillswap-be",
+    "status": "pm2 status",
+    "delete": "pm2 delete skillswap-be"
   },
   "keywords": [],
   "author": "",
@@ -18,10 +30,15 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
+    "jest": "^29.7.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.2",
     "socket.io": "^4.8.3",
-    "jest": "^29.7.0",
     "supertest": "^6.3.3"
+  },
+  "devDependencies": {
+    "migrate-mongo": "^14.0.7",
+    "nodemon": "^3.1.14",
+    "pm2": "^7.0.3"
   }
 }
