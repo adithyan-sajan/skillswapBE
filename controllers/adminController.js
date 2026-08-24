@@ -1,5 +1,6 @@
 // controllers/adminController.js
 // S9: Admin-only controller for user management and dispute resolution
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Session = require('../models/Session');
 
@@ -37,7 +38,40 @@ exports.resolveDispute = async (req, res) => {
       return res.status(400).json({ message: "Session is not in dispute" });
     }
 
+    // S9: Validate the payout direction
+    if (decision !== 'release_to_host' && decision !== 'release_to_learner') {
+      return res.status(400).json({ message: "decision must be one of: 'release_to_host', 'release_to_learner'." });
+    }
+
     // S9: Admin resolves the dispute with their chosen payout direction
+    if (decision === 'release_to_host') {
+      // THE PAYOUT: Move escrow tokens from Learner to Host
+      // Wrap in a Mongo transaction for atomicity (same pattern as markSessionComplete)
+      const payoutSession = await mongoose.startSession();
+      payoutSession.startTransaction();
+
+      try {
+        const learner = await User.findById(session.learnerId).session(payoutSession);
+        const host = await User.findById(session.hostId).session(payoutSession);
+
+        // Deduct from Learner, Add to Host
+        learner.walletBalance -= session.escrowAmount;
+        host.walletBalance += session.escrowAmount;
+
+        await learner.save({ session: payoutSession });
+        await host.save({ session: payoutSession });
+
+        await payoutSession.commitTransaction();
+      } catch (err) {
+        await payoutSession.abortTransaction();
+        throw err;
+      } finally {
+        payoutSession.endSession();
+      }
+    }
+    // decision === 'release_to_learner': funds never left the learner's balance pre-dispute,
+    // so no balance change — completing the session effectively returns them.
+
     session.status = 'completed';
     session.disputeReason = `Resolved by admin (${req.user.username}): ${decision} — ${reason || ''}`;
     await session.save();

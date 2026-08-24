@@ -73,6 +73,9 @@ exports.raiseDispute = async (req, res) => {
 
         const session = await Session.findById(sessionId);
         if (!session) return res.status(404).json({ message: "Session not found" });
+        if (session.status !== 'pending' && session.status !== 'active') {
+            return res.status(400).json({ message: "Session is not active." });
+        }
 
         // S1: Participant authorization — only host or learner may dispute
         if (session.hostId.toString() !== userId.toString() && session.learnerId.toString() !== userId.toString()) {
