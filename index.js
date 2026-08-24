@@ -28,9 +28,12 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Database Connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('⚡ Connected to MongoDB Matrix'))
-  .catch((err) => console.error('Database error:', err));
+// Only auto-connect when this file is the entrypoint (skipped when required by tests)
+if (require.main === module) {
+  mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('⚡ Connected to MongoDB Matrix'))
+    .catch((err) => console.error('Database error:', err));
+}
 
 // Routes
 app.use('/api/users', require('./routes/userRoutes'));
@@ -128,6 +131,11 @@ io.on('connection', (socket) => {
 });
 
 // 🚨 5. START THE SERVER using `server.listen`, NOT `app.listen`
-server.listen(PORT, () => {
-  console.log(`🚀 Hybrid HTTP/Socket Server booting on port ${PORT}`);
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`🚀 Hybrid HTTP/Socket Server booting on port ${PORT}`);
+  });
+}
+
+// Exported so tests (supertest / socket.io-client) can use the app without opening a port
+module.exports = { app, server, io };
